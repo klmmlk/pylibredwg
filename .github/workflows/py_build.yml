@@ -25,7 +25,8 @@ jobs:
       run: |
         choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
         choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools" --no-progress
-        choco install swig --version=4.0.2 --no-progress
+        choco install swig --no-progress  # Remove specific version
+
 
     - name: Configure CMake
       run: |
