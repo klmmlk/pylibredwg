@@ -1,4 +1,4 @@
-name: Build LibreDWG Python
+name: Build LibreDWG with MinGW and Ninja
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
     branches:
       - main
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: windows-latest
@@ -16,29 +17,31 @@ jobs:
     - name: Checkout source code
       uses: actions/checkout@v3
 
-    - name: Setup Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.11'
-
-
-    - name: Install Dependencies
+    - name: Install MinGW and Ninja
       run: |
-        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
+        choco install mingw --no-progress
         choco install ninja --no-progress
-        choco install swig --no-progress  # Remove specific version
+
+    - name: Add MinGW to PATH
+      run: |
+        echo "::add-path::C:\tools\mingw64\bin"
+
+    - name: Install CMake
+      run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
 
     - name: Configure CMake
       run: |
         mkdir build
         cd build
-        cmake .. -G "Ninja" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_INSTALL_PREFIX=C:\libredwg_install
+        cmake .. -G "Ninja" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_INSTALL_PREFIX=C:\libredwg_install
 
     - name: Build Project
-      run: cmake --build build --config Release
+      run: |
+        cd build
+        cmake --build . --config Release
 
     - name: Package artifacts
       uses: actions/upload-artifact@v3
       with:
         name: libredwg
-        path: build\Release\libredwg.dll
+        path: build
