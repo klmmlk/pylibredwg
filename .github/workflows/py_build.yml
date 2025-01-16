@@ -24,7 +24,7 @@ jobs:
 
     - name: Add MinGW to PATH
       run: |
-        echo "::add-path::C:\tools\mingw64\bin"
+        echo "C:\tools\mingw64\bin" >> $GITHUB_PATH
 
     - name: Install CMake
       run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
