@@ -1,0 +1,43 @@
+name: Build LibreDWG Python
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v3
+
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.11'
+
+    - name: Install Dependencies
+      run: |
+        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
+        choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools" --no-progress
+        choco install swig --version=4.0.2 --no-progress
+
+    - name: Configure CMake
+      run: |
+        mkdir build
+        cd build
+        cmake .. -G "Visual Studio 16 2019" -A x64 -DCMAKE_INSTALL_PREFIX=C:\libredwg_install -DSWIG_EXECUTABLE=C:\ProgramData\chocolatey\lib\swig\tools\swigwin-4.0.2\swig.exe
+
+    - name: Build Project
+      run: cmake --build build --config Release
+
+    - name: Package artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: libredwg
+        path: build\Release\libredwg.dll
