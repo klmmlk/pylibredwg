@@ -7,54 +7,88 @@ on:
   pull_request:
     branches:
       - main
+    tags:
+      - '0.*.*'
+      - '0.*'
   workflow_dispatch:
-  
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
+  linux:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 50
+    strategy:
+      fail-fast: true
+      matrix:
+        CONFIGURE_ARGS:
+          - CFLAGS="-O1 -fno-omit-frame-pointer -fsanitize=address -fno-var-tracking" --disable-bindings --disable-docs
+          - CC="clang"
+          - --enable-release
+          - --enable-gcov --disable-bindings --disable-docs CFLAGS="-O0 -g"
+          - --disable-write --disable-docs
+          - CFLAGS="-O2 -m32" --disable-bindings --disable-docs
+          - CFLAGS="-O2 -fno-omit-frame-pointer -fsanitize=undefined -fno-var-tracking" --disable-bindings --disable-docs --enable-check-less
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y build-essential python3-dev swig autoconf libtool pkg-config
-
-      - name: Run autogen.sh
-        run: |
-          ./autogen.sh
-
-      - name: Configure and compile LibreDWG
-        run: |
-          ./configure
-          make
-
-      - name: Install LibreDWG
-        run: |
-          sudo make install
-
-      - name: Generate Python bindings using SWIG
-        run: |
-          swig -python -outdir . -o libdwg_python_wrap.c libdwg_python.i
-
-      - name: Compile Python bindings
-        run: |
-          gcc -fPIC -I/usr/include/python3.9 -c libdwg_python_wrap.c
-          gcc -shared libdwg_python_wrap.o -o _libdwg.so -ldwg
-
-      - name: Test Python bindings
-        run: |
-          python3 -c "import libdwg; print('LibreDWG Python bindings compiled successfully')"
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: libdwg-python-bindings
-          path: _libdwg.so
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+        submodules: recursive
+    - name: setup-python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - if: contains(matrix.CONFIGURE_ARGS, '-m32')
+      name: setup gcc-multilib
+      run: |
+        sudo apt-get -y update
+        sudo apt-get -y install gcc-multilib
+    - if: contains(matrix.CONFIGURE_ARGS, '--enable-release')
+      name: setup --enable-release
+      run: |
+        sudo apt-get -y update
+        sudo apt-get -y install texlive help2man libconvert-binary-c-perl shellcheck \
+          swig python3-dev python3-libxml2 libxml2-dev libpcre2-dev libpcre2-32-0 jq \
+          pkg-config shellcheck parallel rpmlint shfmt doxygen jing valgrind cppcheck gperf \
+          intltool
+        build-aux/install-libxslt
+        build-aux/install-pslib
+    - uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        create-symlink: true
+        key: ${{ github.job }}-${{ matrix.CONFIGURE_ARGS }}
+    - run: sh autogen.sh
+    - if: contains(matrix.CONFIGURE_ARGS, '-fsanitize=address')
+      name: Fix kernel mmap rnd bits for -fsanitize=address
+      run: |
+        sudo sysctl vm.mmap_rnd_bits=28
+    - run: ./configure ${{ matrix.CONFIGURE_ARGS }} --enable-python
+    - run: make -j
+    - if: ${{ !contains(matrix.CONFIGURE_ARGS, '--enable-gcov') && !contains(matrix.CONFIGURE_ARGS, '--enable-release') && startsWith(github.ref, 'refs/heads/') }}
+      run: make -j check
+    - if: contains(matrix.CONFIGURE_ARGS, '--enable-gcov')
+      timeout-minutes: 65
+      name: Run make codecov if --enable-gcov
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      run: make codecov
+      continue-on-error: true
+    - if: contains(matrix.CONFIGURE_ARGS, '--enable-release')
+      name: Run make distcheck if --enable-release
+      run: |
+        make regen-dynapi
+        make distcheck
+    - if: contains(matrix.CONFIGURE_ARGS, '--enable-release') && startsWith(github.ref, 'refs/tags/')
+      name: Prep-Release
+      run: sha256sum libredwg-*.tar.* > dist.sha256
+    - if: contains(matrix.CONFIGURE_ARGS, '--enable-release') && startsWith(github.ref, 'refs/tags/')
+      name: Release
+      continue-on-error: true
+      uses: softprops/action-gh-release@v1
+      with:
+        body_path: dist.sha256
+        files: |
+          dist.sha256
+          libredwg-*.tar.*
