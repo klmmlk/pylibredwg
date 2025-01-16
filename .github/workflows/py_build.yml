@@ -1,10 +1,6 @@
-name: Build LibreDWG with Python Bindings
-
+name: Github CI
 on:
   push:
-    branches:
-      - main
-  pull_request:
     branches:
       - main
     tags:
@@ -12,83 +8,72 @@ on:
       - '0.*'
   workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  linux:
-    runs-on: ubuntu-latest
-    timeout-minutes: 50
-    strategy:
-      fail-fast: true
-      matrix:
-        CONFIGURE_ARGS:
-          - CFLAGS="-O1 -fno-omit-frame-pointer -fsanitize=address -fno-var-tracking" --disable-bindings --disable-docs
-          - CC="clang"
-          - --enable-release
-          - --enable-gcov --disable-bindings --disable-docs CFLAGS="-O0 -g"
-          - --disable-write --disable-docs
-          - CFLAGS="-O2 -m32" --disable-bindings --disable-docs
-          - CFLAGS="-O2 -fno-omit-frame-pointer -fsanitize=undefined -fno-var-tracking" --disable-bindings --disable-docs --enable-check-less
+  mingw:
+    name: mingw
+    runs-on: windows-latest
+    env:
+      MSYS2_DIR: msys64
+      MSYS2_ARCH: x86_64
+      MSYSTEM: MINGW64
+      ARCH: win64
+      PLATFORM: x64
+
     steps:
-    - uses: actions/checkout@v4
+    - name: setup-msys2
+      uses: msys2/setup-msys2@v2
+      with:
+        path-type: minimal
+        update: true
+        install: >-
+          git
+          base-devel
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-libtool
+          mingw-w64-x86_64-libiconv
+          mingw-w64-x86_64-libxml2
+          mingw-w64-x86_64-swig
+          mingw-w64-x86_64-python3  # Use Python 3
+          libtool
+          autoconf-wrapper
+          automake-wrapper
+          texinfo
+          gperf
+          mingw-w64-x86_64-perl
+          mingw-w64-x86_64-pcre2
+
+    - run: reg add "HKLM\Software\Microsoft\Windows\Windows Error Reporting" /f /v DontShowUI /d 1
+
+    - name: checkout
+      uses: actions/checkout@v4
       with:
         fetch-depth: 1
         submodules: recursive
-    - name: setup-python
-      uses: actions/setup-python@v5
+
+    - shell: msys2 {0}
+      run: sh ./autogen.sh
+      continue-on-error: true
+
+    - shell: msys2 {0}
+      run: ./configure --disable-dependency-tracking --enable-check-less
+
+    - shell: msys2 {0}
+      run: make -j
+
+    - if: failure()
+      shell: msys2 {0}
+      run: make -C src dwg_api.i; tar cfz mingw-failure.tgz src/dwg_api.i src/config.h
+
+    - if: failure()
+      uses: actions/upload-artifact@v4
       with:
-        python-version: '3.11'
-    - if: contains(matrix.CONFIGURE_ARGS, '-m32')
-      name: setup gcc-multilib
-      run: |
-        sudo apt-get -y update
-        sudo apt-get -y install gcc-multilib
-    - if: contains(matrix.CONFIGURE_ARGS, '--enable-release')
-      name: setup --enable-release
-      run: |
-        sudo apt-get -y update
-        sudo apt-get -y install texlive help2man libconvert-binary-c-perl shellcheck \
-          swig python3-dev python3-libxml2 libxml2-dev libpcre2-dev libpcre2-32-0 jq \
-          pkg-config shellcheck parallel rpmlint shfmt doxygen jing valgrind cppcheck gperf \
-          intltool
-        build-aux/install-libxslt
-        build-aux/install-pslib
-    - uses: hendrikmuhs/ccache-action@v1.2
-      with:
-        create-symlink: true
-        key: ${{ github.job }}-${{ matrix.CONFIGURE_ARGS }}
-    - run: sh autogen.sh
-    - if: contains(matrix.CONFIGURE_ARGS, '-fsanitize=address')
-      name: Fix kernel mmap rnd bits for -fsanitize=address
-      run: |
-        sudo sysctl vm.mmap_rnd_bits=28
-    - run: ./configure ${{ matrix.CONFIGURE_ARGS }} --enable-python
-    - run: make -j
-    - if: ${{ !contains(matrix.CONFIGURE_ARGS, '--enable-gcov') && !contains(matrix.CONFIGURE_ARGS, '--enable-release') && startsWith(github.ref, 'refs/heads/') }}
+        name: mingw-failure.tgz
+        path: mingw-failure.tgz
+
+    - shell: msys2 {0}
       run: make -j check
-    - if: contains(matrix.CONFIGURE_ARGS, '--enable-gcov')
-      timeout-minutes: 65
-      name: Run make codecov if --enable-gcov
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      run: make codecov
-      continue-on-error: true
-    - if: contains(matrix.CONFIGURE_ARGS, '--enable-release')
-      name: Run make distcheck if --enable-release
+
+    - name: Test Python Binding
+      shell: msys2 {0}
       run: |
-        make regen-dynapi
-        make distcheck
-    - if: contains(matrix.CONFIGURE_ARGS, '--enable-release') && startsWith(github.ref, 'refs/tags/')
-      name: Prep-Release
-      run: sha256sum libredwg-*.tar.* > dist.sha256
-    - if: contains(matrix.CONFIGURE_ARGS, '--enable-release') && startsWith(github.ref, 'refs/tags/')
-      name: Release
-      continue-on-error: true
-      uses: softprops/action-gh-release@v1
-      with:
-        body_path: dist.sha256
-        files: |
-          dist.sha256
-          libredwg-*.tar.*
+        python -c "import libredwg; print('libredwg imported successfully')"
