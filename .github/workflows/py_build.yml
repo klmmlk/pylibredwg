@@ -33,7 +33,7 @@ jobs:
           mingw-w64-x86_64-libiconv
           mingw-w64-x86_64-libxml2
           mingw-w64-x86_64-swig
-          mingw-w64-x86_64-python3  # Use Python 3
+          mingw-w64-x86_64-python3
           libtool
           autoconf-wrapper
           automake-wrapper
