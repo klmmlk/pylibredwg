@@ -73,6 +73,9 @@ jobs:
     - shell: msys2 {0}
       run: make -j check
 
+    - shell: msys2 {0}
+      run: python setup.py install
+
     - name: Test Python Binding
       shell: msys2 {0}
       run: |
