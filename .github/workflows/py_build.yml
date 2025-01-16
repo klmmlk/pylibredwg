@@ -21,21 +21,18 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v1
-      with:
-        msbuild-version: '16.11.42'  # 指定需要的 MSBuild 版本
 
     - name: Install Dependencies
       run: |
         choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
+        choco install ninja --no-progress
         choco install swig --no-progress  # Remove specific version
 
     - name: Configure CMake
       run: |
         mkdir build
         cd build
-        cmake .. -G "Visual Studio 16 2019" -A x64 -DCMAKE_INSTALL_PREFIX=C:\libredwg_install -DSWIG_EXECUTABLE=C:\ProgramData\chocolatey\lib\swig\tools\swigwin-4.0.2\swig.exe
+        cmake .. -G "Ninja" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_INSTALL_PREFIX=C:\libredwg_install
 
     - name: Build Project
       run: cmake --build build --config Release
