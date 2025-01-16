@@ -28,6 +28,12 @@ jobs:
 
     - name: Install CMake
       run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
+      
+    - name: Check MinGW Installation
+      run: |
+        gcc --version
+        g++ --version
+        ninja --version
 
     - name: Configure CMake
       run: |
