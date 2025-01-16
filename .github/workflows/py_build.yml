@@ -1,4 +1,4 @@
-name: Build LibreDWG with MinGW and Ninja
+name: Build LibreDWG with Python Bindings
 
 on:
   push:
@@ -8,46 +8,53 @@ on:
     branches:
       - main
   workflow_dispatch:
-
+  
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout source code
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Install MinGW and Ninja
-      run: |
-        choco install mingw --no-progress
-        choco install ninja --no-progress
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
 
-    - name: Add MinGW to PATH
-      run: |
-        echo "C:\tools\mingw64\bin" >> $GITHUB_PATH
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential python3-dev swig autoconf libtool pkg-config
 
-    - name: Install CMake
-      run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
-      
-    - name: Check MinGW Installation
-      run: |
-        gcc --version
-        g++ --version
-        ninja --version
+      - name: Run autogen.sh
+        run: |
+          ./autogen.sh
 
-    - name: Configure CMake
-      run: |
-        mkdir build
-        cd build
-        cmake .. -G "Ninja" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_INSTALL_PREFIX=C:\libredwg_install
+      - name: Configure and compile LibreDWG
+        run: |
+          ./configure
+          make
 
-    - name: Build Project
-      run: |
-        cd build
-        cmake --build . --config Release
+      - name: Install LibreDWG
+        run: |
+          sudo make install
 
-    - name: Package artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: libredwg
-        path: build
+      - name: Generate Python bindings using SWIG
+        run: |
+          swig -python -outdir . -o libdwg_python_wrap.c libdwg_python.i
+
+      - name: Compile Python bindings
+        run: |
+          gcc -fPIC -I/usr/include/python3.9 -c libdwg_python_wrap.c
+          gcc -shared libdwg_python_wrap.o -o _libdwg.so -ldwg
+
+      - name: Test Python bindings
+        run: |
+          python3 -c "import libdwg; print('LibreDWG Python bindings compiled successfully')"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: libdwg-python-bindings
+          path: _libdwg.so
