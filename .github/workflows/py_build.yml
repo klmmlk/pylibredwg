@@ -26,6 +26,10 @@ jobs:
         choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
         choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools" --no-progress
         choco install swig --no-progress  # Remove specific version
+    - name: Add Visual Studio to PATH
+      run: |
+        $env:PATH += ";C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin"
+        echo $env:PATH
 
 
     - name: Configure CMake
