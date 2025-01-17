@@ -44,25 +44,6 @@ jobs:
 
     - run: reg add "HKLM\Software\Microsoft\Windows\Windows Error Reporting" /f /v DontShowUI /d 1
 
-    - name: 安装pip
-      shell: msys2 {0}
-      run: |
-        which python
-        python --version
-        pacman -Sy
-        pacman -S --noconfirm mingw-w64-x86_64-python-pip
-
-    - name: 重新安装 pip
-      shell: msys2 {0}
-      run: |
-        python -m ensurepip --upgrade
-        python -m pip install --upgrade pip
-        python -m pip install distlib
-
-    - name: 安装setuptools build installer
-      shell: msys2 {0}
-      run: /mingw64/bin/pip install --upgrade setuptools build installer
-
     - name: checkout
       uses: actions/checkout@v4
       with:
@@ -109,17 +90,28 @@ jobs:
         name: mingw-failure.tgz
         path: mingw-failure.tgz
 
-      
-
-    - shell: msys2 {0}
-      run: /mingw64/bin/python -m build
-
-    - shell: msys2 {0}
+    - name: 创建虚拟环境
+      shell: msys2 {0}
       run: |
-        /mingw64/bin/python -m installer dist/*.whl
+        python -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip setuptools build installer
+
+    - name: 在虚拟环境中运行 build
+      shell: msys2 {0}
+      run: |
+        source venv/bin/activate
+        python -m build
+
+    - name: 在虚拟环境中安装 wheel
+      shell: msys2 {0}
+      run: |
+        source venv/bin/activate
+        python -m installer dist/*.whl
 
     - name: Test Python Binding
       shell: msys2 {0}
       run: |
+        source venv/bin/activate
         python -c "import sys; print(sys.path)"
         python -c "import libredwg; print('libredwg imported successfully')"
