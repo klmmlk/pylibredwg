@@ -82,9 +82,15 @@ jobs:
       with:
         name: mingw-failure.tgz
         path: mingw-failure.tgz
-
     - shell: msys2 {0}
-      run: python -m pip install --upgrade setuptools
+      run: |
+        which python
+        python --version
+        which pip
+        pip --version
+    - shell: msys2 {0}
+      run: pip install --upgrade setuptools
+      
 
     - shell: msys2 {0}
       run: python setup.py install
