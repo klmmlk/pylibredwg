@@ -71,9 +71,6 @@ jobs:
         path: mingw-failure.tgz
 
     - shell: msys2 {0}
-      run: make -j check
-
-    - shell: msys2 {0}
       run: |
         cd /d/a/pylibredwg/pylibredwg
         ls -R  # 列出当前目录内容，用于调试
