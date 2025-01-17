@@ -81,7 +81,7 @@ jobs:
         name: mingw-failure.tgz
         path: mingw-failure.tgz
 
-    - name: Install setuptools
+    - shell: msys2 {0}
       run: python -m pip install --upgrade setuptools
 
     - shell: msys2 {0}
