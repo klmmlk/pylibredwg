@@ -72,20 +72,6 @@ jobs:
           echo "cache_hit=false" >> $GITHUB_OUTPUT
         fi
 
-    - name: 生成 swig_python.c
-      shell: msys2 {0}
-      run: |
-        swig -python -I$(pwd)/include -o bindings/python/swig_python.c bindings/dwg.i
-        patch -t -N -p2 -b -i build-aux/swig_python.patch
-
-    - name: 检查 swig_python.c 文件
-      shell: msys2 {0}
-      run: |
-        if [[ ! -f bindings/python/swig_python.c ]]; then
-          echo "Error: swig_python.c not found!"
-          exit 1
-        fi
-
     - name: 开始编译
       if: steps.cache-check.outputs.cache_hit == 'false'
       shell: msys2 {0}
@@ -105,6 +91,20 @@ jobs:
       with:
         name: mingw-failure.tgz
         path: mingw-failure.tgz
+
+    - name: 生成 swig_python.c
+      shell: msys2 {0}
+      run: |
+        swig -python -I$(pwd)/include -o bindings/python/swig_python.c bindings/dwg.i
+        patch -t -N -p2 -b -i build-aux/swig_python.patch
+
+    - name: 检查 swig_python.c 文件
+      shell: msys2 {0}
+      run: |
+        if [[ ! -f bindings/python/swig_python.c ]]; then
+          echo "Error: swig_python.c not found!"
+          exit 1
+        fi
 
     - name: 创建虚拟环境
       shell: msys2 {0}
