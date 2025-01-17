@@ -47,7 +47,7 @@ jobs:
     - name: 安装pip
       shell: msys2 {0}
       run: |
-        pacman -Syu
+        pacman -Sy
         pacman -S --noconfirm mingw-w64-x86_64-python-pip
         python -m pip install distlib
 
@@ -73,11 +73,12 @@ jobs:
 
     - name: 检查缓存
       id: cache-check
+      shell: bash
       run: |
         if [[ -f build/Makefile ]]; then
-          echo "::set-output name=cache_hit::true"
+          echo "cache_hit=true" >> $GITHUB_OUTPUT
         else
-          echo "::set-output name=cache_hit::false"
+          echo "cache_hit=false" >> $GITHUB_OUTPUT
         fi
 
     - name: 开始编译
