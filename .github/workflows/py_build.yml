@@ -47,6 +47,7 @@ jobs:
     - name: 安装pip
       shell: msys2 {0}
       run: |
+        pacman -Syu
         pacman -S --noconfirm mingw-w64-x86_64-python-pip
 
     - name: 安装setuptools build installer
@@ -71,16 +72,12 @@ jobs:
 
     - name: 开始编译
       shell: msys2 {0}
-      run: sh ./autogen.sh
-      continue-on-error: true
-
-    - shell: msys2 {0}
-      run: ./configure --disable-dependency-tracking --enable-check-less
-
-    - shell: msys2 {0}
       run: |
+        sh ./autogen.sh
+        ./configure --disable-dependency-tracking --enable-check-less
         export BUILD_DIR=build
         make -j
+      continue-on-error: true
 
     - if: failure()
       shell: msys2 {0}
