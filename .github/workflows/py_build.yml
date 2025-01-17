@@ -97,7 +97,11 @@ jobs:
       
 
     - shell: msys2 {0}
-      run: python setup.py install
+      run: /mingw64/bin/python -m build
+      
+    - shell: msys2 {0}
+      run: |
+        /mingw64/bin/python -m installer dist/*.whl
 
     - name: Test Python Binding
       shell: msys2 {0}
