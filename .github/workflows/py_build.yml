@@ -44,17 +44,14 @@ jobs:
 
     - run: reg add "HKLM\Software\Microsoft\Windows\Windows Error Reporting" /f /v DontShowUI /d 1
 
-    - shell: msys2 {0}
+    - name: 安装pip
+      shell: msys2 {0}
       run: |
         pacman -S --noconfirm mingw-w64-x86_64-python-pip
-        /mingw64/bin/pip --version
-        which python
-        python --version
-        which pip
-        pip --version
 
-    - shell: msys2 {0}
-      run: /mingw64/bin/pip install --upgrade setuptools
+    - name: 安装setuptools build installer
+      shell: msys2 {0}
+      run: /mingw64/bin/pip install --upgrade setuptools build installer
 
     - name: checkout
       uses: actions/checkout@v4
@@ -68,11 +65,12 @@ jobs:
         path: |
           ~/.cache
           ./build
-        key: ${{ runner.os }}-build-${{ hashFiles('**/Makefile') }}
+        key: ${{ runner.os }}-build-${{ hashFiles('**/Makefile.am') }}
         restore-keys: |
           ${{ runner.os }}-build-
 
-    - shell: msys2 {0}
+    - name: 开始编译
+      shell: msys2 {0}
       run: sh ./autogen.sh
       continue-on-error: true
 
@@ -98,7 +96,7 @@ jobs:
 
     - shell: msys2 {0}
       run: /mingw64/bin/python -m build
-      
+
     - shell: msys2 {0}
       run: |
         /mingw64/bin/python -m installer dist/*.whl
