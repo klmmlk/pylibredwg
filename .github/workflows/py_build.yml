@@ -41,7 +41,7 @@ jobs:
           gperf
           mingw-w64-x86_64-perl
           mingw-w64-x86_64-pcre2
-          patch  # 确保 patch 工具已安装
+          patch
 
     - run: reg add "HKLM\Software\Microsoft\Windows\Windows Error Reporting" /f /v DontShowUI /d 1
     - run: swig -version
