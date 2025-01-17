@@ -34,6 +34,7 @@ jobs:
           mingw-w64-x86_64-libxml2
           mingw-w64-x86_64-swig
           mingw-w64-x86_64-python3
+          python-pip
           libtool
           autoconf-wrapper
           automake-wrapper
@@ -55,7 +56,7 @@ jobs:
       with:
         path: |
           ~/.cache
-          /d/a/libredwg/libredwg # 可以替换为实际的编译目录
+          /d/a/pylibredwg/pylibredwg # 可以替换为实际的编译目录
         key: ${{ runner.os }}-build-${{ hashFiles('**/Makefile') }}
         restore-keys: |
           ${{ runner.os }}-build-
