@@ -47,8 +47,16 @@ jobs:
     - name: 安装pip
       shell: msys2 {0}
       run: |
+        which python
+        python --version
         pacman -Sy
         pacman -S --noconfirm mingw-w64-x86_64-python-pip
+
+    - name: 重新安装 pip
+      shell: msys2 {0}
+      run: |
+        python -m ensurepip --upgrade
+        python -m pip install --upgrade pip
         python -m pip install distlib
 
     - name: 安装setuptools build installer
@@ -67,7 +75,7 @@ jobs:
         path: |
           ~/.cache
           ./build
-        key: ${{ runner.os }}-ccache-${{ hashFiles('**/Makefile.am', '**/configure.ac', '**/src/*.c', '**/src/*.h') }}
+        key: ${{ runner.os }}-build-${{ hashFiles('**/Makefile.am', '**/configure.ac', '**/src/*.c', '**/src/*.h') }}
         restore-keys: |
           ${{ runner.os }}-build-
 
