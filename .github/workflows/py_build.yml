@@ -49,6 +49,7 @@ jobs:
       run: |
         pacman -Syu
         pacman -S --noconfirm mingw-w64-x86_64-python-pip
+        python -m pip install distlib
 
     - name: 安装setuptools build installer
       shell: msys2 {0}
@@ -66,11 +67,21 @@ jobs:
         path: |
           ~/.cache
           ./build
-        key: ${{ runner.os }}-build-${{ hashFiles('**/Makefile.am') }}
+        key: ${{ runner.os }}-ccache-${{ hashFiles('**/Makefile.am', '**/configure.ac', '**/src/*.c', '**/src/*.h') }}
         restore-keys: |
           ${{ runner.os }}-build-
 
+    - name: 检查缓存
+      id: cache-check
+      run: |
+        if [[ -f build/Makefile ]]; then
+          echo "::set-output name=cache_hit::true"
+        else
+          echo "::set-output name=cache_hit::false"
+        fi
+
     - name: 开始编译
+      if: steps.cache-check.outputs.cache_hit == 'false'
       shell: msys2 {0}
       run: |
         sh ./autogen.sh
