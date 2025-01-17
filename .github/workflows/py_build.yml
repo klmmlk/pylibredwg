@@ -34,7 +34,6 @@ jobs:
           mingw-w64-x86_64-libxml2
           mingw-w64-x86_64-swig
           mingw-w64-x86_64-python3
-          python-pip
           libtool
           autoconf-wrapper
           automake-wrapper
@@ -56,7 +55,7 @@ jobs:
       with:
         path: |
           ~/.cache
-          /d/a/pylibredwg/pylibredwg # 可以替换为实际的编译目录
+          /d/a/pylibredwg/pylibredwg
         key: ${{ runner.os }}-build-${{ hashFiles('**/Makefile') }}
         restore-keys: |
           ${{ runner.os }}-build-
@@ -81,6 +80,9 @@ jobs:
       with:
         name: mingw-failure.tgz
         path: mingw-failure.tgz
+
+    - shell: msys2 {0}
+      run: python -m ensurepip --upgrade
 
     - shell: msys2 {0}
       run: python -m pip install --upgrade setuptools
