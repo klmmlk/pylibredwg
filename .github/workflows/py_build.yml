@@ -74,7 +74,10 @@ jobs:
       run: make -j check
 
     - shell: msys2 {0}
-      run: python setup.py install
+      run: |
+        cd pylibredwg
+        ls -R  # 列出当前目录内容，用于调试
+        python setup.py install
 
     - name: Test Python Binding
       shell: msys2 {0}
