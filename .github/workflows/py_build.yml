@@ -34,7 +34,6 @@ jobs:
           mingw-w64-x86_64-libxml2
           mingw-w64-x86_64-swig
           mingw-w64-x86_64-python3
-          python-pip
           libtool
           autoconf-wrapper
           automake-wrapper
@@ -44,6 +43,18 @@ jobs:
           mingw-w64-x86_64-pcre2
 
     - run: reg add "HKLM\Software\Microsoft\Windows\Windows Error Reporting" /f /v DontShowUI /d 1
+
+    - shell: msys2 {0}
+      run: |
+        pacman -S --noconfirm mingw-w64-x86_64-python-pip
+        /mingw64/bin/pip --version
+        which python
+        python --version
+        which pip
+        pip --version
+
+    - shell: msys2 {0}
+      run: /mingw64/bin/pip install --upgrade setuptools
 
     - name: checkout
       uses: actions/checkout@v4
@@ -82,14 +93,7 @@ jobs:
       with:
         name: mingw-failure.tgz
         path: mingw-failure.tgz
-    - shell: msys2 {0}
-      run: |
-        which python
-        python --version
-        which pip
-        pip --version
-    - shell: msys2 {0}
-      run: /mingw64/bin/pip install --upgrade setuptools
+
       
 
     - shell: msys2 {0}
