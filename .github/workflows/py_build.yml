@@ -71,12 +71,13 @@ jobs:
         path: mingw-failure.tgz
 
     - shell: msys2 {0}
-      run: |
-        cd /d/a/pylibredwg/pylibredwg
-        ls -R  # 列出当前目录内容，用于调试
-        python setup.py install
+      run: make -j check
+
+    - shell: msys2 {0}
+      run: python setup.py install
 
     - name: Test Python Binding
       shell: msys2 {0}
       run: |
+        python -c "import sys; print(sys.path)"
         python -c "import libredwg; print('libredwg imported successfully')"
