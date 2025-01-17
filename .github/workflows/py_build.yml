@@ -89,7 +89,7 @@ jobs:
         which pip
         pip --version
     - shell: msys2 {0}
-      run: pip install --upgrade setuptools
+      run: /mingw64/bin/pip install --upgrade setuptools
       
 
     - shell: msys2 {0}
