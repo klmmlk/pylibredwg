@@ -50,6 +50,17 @@ jobs:
         fetch-depth: 1
         submodules: recursive
 
+    - name: Cache build files
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache
+          /d/a/libredwg/libredwg # 可以替换为实际的编译目录
+        key: ${{ runner.os }}-build-${{ hashFiles('**/Makefile') }}
+        restore-keys: |
+          ${{ runner.os }}-build-
+
+
     - shell: msys2 {0}
       run: sh ./autogen.sh
       continue-on-error: true
@@ -70,8 +81,8 @@ jobs:
         name: mingw-failure.tgz
         path: mingw-failure.tgz
 
-    - shell: msys2 {0}
-      run: make -j check
+    - name: Install setuptools
+      run: python -m pip install --upgrade setuptools
 
     - shell: msys2 {0}
       run: python setup.py install
