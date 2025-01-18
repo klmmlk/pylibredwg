@@ -6,7 +6,7 @@ ext_modules = [
     Extension(
         name="libredwg",
         sources=["bindings/python/swig_python.c"],  # 修改为实际路径
-        include_dirs=["include"],  # 头文件目录
+        include_dirs=["include","src"],  # 头文件目录
         library_dirs=["lib"],  # 库文件目录
         libraries=["redwg"],  # 依赖的库
     )
