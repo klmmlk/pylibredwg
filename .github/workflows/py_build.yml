@@ -56,7 +56,7 @@ jobs:
       run: |
         sh ./autogen.sh
         ./configure --disable-dependency-tracking --enable-python
-        make -j bindings/python
+        make -j
       continue-on-error: true
 
     - if: failure()
