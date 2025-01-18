@@ -44,7 +44,6 @@ jobs:
           patch
 
     - run: reg add "HKLM\Software\Microsoft\Windows\Windows Error Reporting" /f /v DontShowUI /d 1
-    - run: swig -version
 
     - name: checkout
       uses: actions/checkout@v4
@@ -56,8 +55,8 @@ jobs:
       shell: msys2 {0}
       run: |
         sh ./autogen.sh
-        ./configure --disable-dependency-tracking --enable-check-less
-        make -j
+        ./configure --disable-dependency-tracking --enable-python
+        make -j bindings/python
       continue-on-error: true
 
     - if: failure()
@@ -69,7 +68,6 @@ jobs:
       with:
         name: mingw-failure.tgz
         path: mingw-failure.tgz
-
 
     - name: 检查 swig_python.c 文件
       shell: msys2 {0}
