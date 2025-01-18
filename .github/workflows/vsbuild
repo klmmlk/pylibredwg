@@ -1,0 +1,31 @@
+name: vsbuild
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - '0.*.*'
+      - '0.*'
+  workflow_dispatch:
+
+jobs:
+  vs2019:
+    runs-on: windows-2019
+    timeout-minutes: 20
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+        submodules: recursive
+    - run: cmake -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=Release .
+    - run: cmake --build . --config Release
+    - run: copy Release/libredwg.dll test/unit-testing/Release/
+    - run: ctest . --output-on-failure
+    - if: failure()
+      run: tar cfz msvc-failure.tgz Testing/Temporary/LastTest.log src/config.h
+    - if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: msvc-failure.tgz
+        path: msvc-failure.tgz
